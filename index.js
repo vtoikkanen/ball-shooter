@@ -35,27 +35,41 @@ class Player {
     }
 }
 
-/* Projectile (bullet) that the player shoots */
-const pint = new Image();
-pint.src = "pint.png";
+class ProjectileImage {
+    constructor() {
 
+    }
+}
+
+/* Projectile (bullet) that the player shoots */
 class Projectile {
-    constructor(x, y, radius, color, velocity) {
+    constructor(x, y, radius, color, velocity, projectileAngle) {
         this.x = x;
         this.y = y;
         this.radius = radius;
         this.color = color;
         this.velocity = velocity;
         this.initialVelocity = true;
+        this.projectileAngle = projectileAngle;
     }
 
     draw() {
-        const imagePattern = c.createPattern(pint, "repeat");
+        /*
         c.beginPath();
         c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
         c.fillStyle = this.color;
         c.fill();
         c.restore()
+        */
+
+        const pint = new Image();
+        pint.src = "pint.png";
+        c.save();
+        c.translate(this.x, this.y);
+        c.rotate(this.projectileAngle);
+        c.translate(-this.x, -this.y);
+        c.drawImage(pint, this.x, this.y, 15, 50);
+        c.restore();
     }
 
     update() {
@@ -68,19 +82,31 @@ class Projectile {
 
 /* Enemy */
 class Enemy {
-    constructor(x, y, radius, color, velocity) {
+    constructor(x, y, radius, color, velocity, enemyAngle) {
         this.x = x;
         this.y = y;
         this.radius = radius;
         this.color = color;
         this.velocity = velocity;
+        this.enemyAngle = enemyAngle;
     }
 
     draw() {
+        /*
         c.beginPath();
         c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
         c.fillStyle = this.color;
         c.fill();
+        */
+
+        const meteor = new Image();
+        meteor.src = "meteor.png";
+        c.save();
+        c.translate(this.x, this.y);
+        c.rotate(this.enemyAngle);
+        c.translate(-this.x, -this.y);
+        c.drawImage(meteor, this.x, this.y, this.radius, this.radius);
+        c.restore();
     }
 
     update() {
@@ -103,12 +129,22 @@ class Particle {
     }
 
     draw() {
+        /*
         c.save();
         c.globalAlpha = this.alpha;
         c.beginPath();
         c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
         c.fillStyle = this.color;
         c.fill();
+        c.restore();
+        */
+        const meteor = new Image();
+        meteor.src = "meteor.png";
+        c.save();
+        c.translate(this.x, this.y);
+        c.rotate(360);
+        c.translate(-this.x, -this.y);
+        c.drawImage(meteor, this.x, this.y, this.radius, this.radius);
         c.restore();
     }
 
@@ -134,7 +170,7 @@ const particles = [];
 
 function spawnEnemies() {
     setInterval(() => {
-        const radius = Math.random() * (30 - 4) + 4;
+        const radius = Math.random() * (60 - 20) + 20;
         let x;
         let y;
         if (Math.random() < 0.5) {
@@ -160,7 +196,11 @@ function spawnEnemies() {
             y: Math.sin(angle) * multiplier
         };
 
-        const newEnemy = new Enemy(x, y, radius, color, velocity);
+        const enemyAngle = Math.atan2(
+            x - (canvas.width / 2),
+            -(y - (canvas.height / 2))
+        );
+        const newEnemy = new Enemy(x, y, radius, color, velocity, enemyAngle);
         enemies.push(newEnemy);
     }, 500);
 }
@@ -203,25 +243,24 @@ function animate() {
         // End game
         const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
         if (dist - enemy.radius - player.radius < 1) {
-            for (let i = 0; i < enemy.radius * 2; i++) {
-                particles.push(new Particle(enemy.x, enemy.y, Math.random() * 2, enemy.color, {
+            for (let i = 0; i < enemy.radius / 5; i++) {
+                particles.push(new Particle(enemy.x, enemy.y, 10, enemy.color, {
                     x: (Math.random() - 0.5) * (Math.random() * 6),
                     y: (Math.random() - 0.5) * (Math.random() * 6)
                 }));
             }
             setTimeout(() => {
+                1
                 enemies.splice(enemyIndex, 1);
             }, 0);
 
-            /*
+
             cancelAnimationFrame(animationId);
             document.getElementById("overlay").style.display = "block";
             document.getElementById("finalScore").innerText = "Final score: " + score;
             document.getElementById("button").addEventListener("click", () => {
                 window.location.reload();
             });
-            */
-
         }
 
         projectiles.forEach((projectile, projectileIndex) => {
@@ -230,8 +269,8 @@ function animate() {
             // When projectiles touch enemy
             if (dist - enemy.radius - projectile.radius < 1) {
                 // Create explosions
-                for (let i = 0; i < enemy.radius * 2; i++) {
-                    particles.push(new Particle(projectile.x, projectile.y, Math.random() * 2, enemy.color, {
+                for (let i = 0; i < enemy.radius / 5; i++) {
+                    particles.push(new Particle(projectile.x, projectile.y, 10, enemy.color, {
                         x: (Math.random() - 0.5) * (Math.random() * 6),
                         y: (Math.random() - 0.5) * (Math.random() * 6)
                     }));
@@ -276,8 +315,11 @@ window.addEventListener("click", (event) => {
         x: Math.cos(angle) * speedMultiplier, // Multiplication fastens projectiles
         y: Math.sin(angle) * speedMultiplier // Multiplication fastens projectiles
     };
-
-    const newProjectile = new Projectile(canvas.width / 2, canvas.height / 2, 5, "white", velocity);
+    const projectileAngle = Math.atan2(
+        event.clientX - (canvas.width / 2),
+        -(event.clientY - (canvas.height / 2))
+    );
+    const newProjectile = new Projectile(canvas.width / 2, canvas.height / 2, 20, "white", velocity, projectileAngle);
 
     projectiles.push(newProjectile);
 });
