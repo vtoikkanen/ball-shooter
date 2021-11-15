@@ -35,7 +35,10 @@ class Player {
     }
 }
 
-/* Projectile / bullet that the player shoots */
+/* Projectile (bullet) that the player shoots */
+const pint = new Image();
+pint.src = "pint.png";
+
 class Projectile {
     constructor(x, y, radius, color, velocity) {
         this.x = x;
@@ -43,19 +46,23 @@ class Projectile {
         this.radius = radius;
         this.color = color;
         this.velocity = velocity;
+        this.initialVelocity = true;
     }
 
     draw() {
+        const imagePattern = c.createPattern(pint, "repeat");
         c.beginPath();
         c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
         c.fillStyle = this.color;
         c.fill();
+        c.restore()
     }
 
     update() {
         this.draw();
-        this.x = this.x + this.velocity.x;
-        this.y = this.y + this.velocity.y;
+        this.x = this.x + (this.velocity.x * (this.initialVelocity ? 12 : 1));
+        this.y = this.y + (this.velocity.y * (this.initialVelocity ? 12 : 1));
+        this.initialVelocity = false;
     }
 }
 
@@ -118,7 +125,7 @@ class Particle {
 /* Create a player and assign it in the middle (not drawing yet) */
 const x = canvas.width / 2;
 const y = canvas.height / 2;
-const player = new Player(x, y, 10, "white");
+const player = new Player(x, y, 50, "white");
 
 /* Defining projectiles/bullets and enemies arrays */
 const projectiles = [];
@@ -139,7 +146,10 @@ function spawnEnemies() {
             y = Math.random() < 0.5 ? 0 - radius : canvas.height + radius;
         }
 
-        const color = `hsl(${Math.random() * 360}, 50%, 50%)`;
+        const min = 10;
+        const max = 30;
+        const randomGray = Math.floor(Math.random() * (max - min) + min) + "%";
+        const color = `hsl(0, 0%, ${randomGray})`;
 
         const angle = Math.atan2(
             canvas.height / 2 - y,
@@ -159,8 +169,7 @@ function spawnEnemies() {
 let animationId;
 function animate() {
     animationId = requestAnimationFrame(animate);
-    c.fillStyle = 'rgba(0,0,0,.1)';
-    c.fillRect(0, 0, canvas.width, canvas.height);
+    c.clearRect(0, 0, canvas.width, canvas.height);
     player.draw();
 
     particles.forEach((particle, particleIndex) => {
@@ -194,12 +203,25 @@ function animate() {
         // End game
         const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
         if (dist - enemy.radius - player.radius < 1) {
+            for (let i = 0; i < enemy.radius * 2; i++) {
+                particles.push(new Particle(enemy.x, enemy.y, Math.random() * 2, enemy.color, {
+                    x: (Math.random() - 0.5) * (Math.random() * 6),
+                    y: (Math.random() - 0.5) * (Math.random() * 6)
+                }));
+            }
+            setTimeout(() => {
+                enemies.splice(enemyIndex, 1);
+            }, 0);
+
+            /*
             cancelAnimationFrame(animationId);
             document.getElementById("overlay").style.display = "block";
             document.getElementById("finalScore").innerText = "Final score: " + score;
             document.getElementById("button").addEventListener("click", () => {
                 window.location.reload();
             });
+            */
+
         }
 
         projectiles.forEach((projectile, projectileIndex) => {
@@ -249,10 +271,12 @@ window.addEventListener("click", (event) => {
     const y = event.clientY - canvas.height / 2;
     const x = event.clientX - canvas.width / 2;
     const angle = Math.atan2(y, x);
+    const speedMultiplier = 5;
     const velocity = {
-        x: Math.cos(angle) * 5, // Multiplication fastens projectiles
-        y: Math.sin(angle) * 5 // Multiplication fastens projectiles
+        x: Math.cos(angle) * speedMultiplier, // Multiplication fastens projectiles
+        y: Math.sin(angle) * speedMultiplier // Multiplication fastens projectiles
     };
+
     const newProjectile = new Projectile(canvas.width / 2, canvas.height / 2, 5, "white", velocity);
 
     projectiles.push(newProjectile);
